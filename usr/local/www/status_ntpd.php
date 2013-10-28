@@ -4,6 +4,7 @@
 	status_ntpd.php
 	part of pfSense (http://www.pfsense.com/)
 
+	Copyright (C) 2013 Dagorlad
 	Copyright (C) 2012 Jim Pingle
 	All rights reserved.
 
@@ -108,6 +109,31 @@ foreach ($ntpq_clockvar_output as $line) {
 			$gps_lat = $gps_lat * (($gps_vars[4] == "N") ? 1 : -1);
 			$gps_lon = $gps_lon_deg + $gps_lon_min;
 			$gps_lon = $gps_lon * (($gps_vars[6] == "E") ? 1 : -1);
+		}elseif (substr($tmp, 0, 6) == '$GPGGA') {
+			$gps_vars = explode(",", $tmp);
+			$gps_ok  = $gps_vars[6];
+			$gps_lat_deg = substr($gps_vars[2], 0, 2);
+			$gps_lat_min = substr($gps_vars[2], 2) / 60.0;
+			$gps_lon_deg = substr($gps_vars[4], 0, 3);
+			$gps_lon_min = substr($gps_vars[4], 3) / 60.0;
+			$gps_lat = $gps_lat_deg + $gps_lat_min;
+			$gps_lat = $gps_lat * (($gps_vars[3] == "N") ? 1 : -1);
+			$gps_lon = $gps_lon_deg + $gps_lon_min;
+			$gps_lon = $gps_lon * (($gps_vars[5] == "E") ? 1 : -1);
+			$gps_alt = $gps_vars[9];
+			$gps_alt_unit = $gps_vars[10];
+			$gps_sat = $gps_vars[7];
+		}elseif (substr($tmp, 0, 6) == '$GPGLL') {
+			$gps_vars = explode(",", $tmp);
+			$gps_ok  = ($gps_vars[6] == "A");
+			$gps_lat_deg = substr($gps_vars[1], 0, 2);
+			$gps_lat_min = substr($gps_vars[1], 2) / 60.0;
+			$gps_lon_deg = substr($gps_vars[3], 0, 3);
+			$gps_lon_min = substr($gps_vars[3], 3) / 60.0;
+			$gps_lat = $gps_lat_deg + $gps_lat_min;
+			$gps_lat = $gps_lat * (($gps_vars[2] == "N") ? 1 : -1);
+			$gps_lon = $gps_lon_deg + $gps_lon_min;
+			$gps_lon = $gps_lon * (($gps_vars[4] == "E") ? 1 : -1);
 		}
 	}
 }
@@ -185,20 +211,25 @@ include("head.inc");
 	</tbody>
 	</table>
 <?php if (($gps_ok) && ($gps_lat) && ($gps_lon)): ?>
+	<?php $gps_goo_lnk = 2; ?>
 	<table class="tabcont sortable" width="100%" border="0" cellpadding="0" cellspacing="0">
 	<thead>
 	<tr>
 		<th class="listhdrr"><?=gettext("Clock Latitude"); ?></th>
 		<th class="listhdrr"><?=gettext("Clock Longitude"); ?></th>
+		<?php if (isset($gps_alt)) { echo '<th class="listhdrr">'.gettext("Clock Altitude").'</th>'; $gps_goo_lnk++;}?>
+		<?php if (isset($gps_sat)) { echo '<th class="listhdrr">'.gettext("Satellites").'</th>'; $gps_goo_lnk++;}?>
 	</tr>
 	</thead>
 	<tbody>
 		<tr>
 			<td class="listlr" align="center"><?php echo sprintf("%.5f", $gps_lat); ?> (<?php echo sprintf("%d", $gps_lat_deg); ?>&deg; <?php echo sprintf("%.5f", $gps_lat_min*60); ?><?php echo $gps_vars[4]; ?>)</td>
 			<td class="listlr" align="center"><?php echo sprintf("%.5f", $gps_lon); ?> (<?php echo sprintf("%d", $gps_lon_deg); ?>&deg; <?php echo sprintf("%.5f", $gps_lon_min*60); ?><?php echo $gps_vars[6]; ?>)</td>
+			<?php if (isset($gps_alt)) { echo '<td class="listlr" align="center">'.$gps_alt.' '.$gps_alt_unit.'</td>';}?>
+			<?php if (isset($gps_sat)) { echo '<td class="listlr" align="center">'.$gps_sat.'</td>';}?>
 		</tr>
 		<tr>
-			<td class="listlr" colspan="2" align="center"><a href="http://maps.google.com/?q=<?php echo $gps_lat; ?>,<?php echo $gps_lon; ?>">Google Maps Link</a></td>
+			<td class="listlr" colspan="<?php echo $gps_goo_lnk; ?>" align="center"><a href="http://maps.google.com/?q=<?php echo $gps_lat; ?>,<?php echo $gps_lon; ?>">Google Maps Link</a></td>
 		</tr>
 	</tbody>
 	</table>
