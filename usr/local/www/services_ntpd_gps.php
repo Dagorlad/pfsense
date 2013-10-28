@@ -331,20 +331,6 @@ U-Blox =	#U-Blox 5, 6 and probably 7
 		</tr>
 		<tr>
 			<td width="22%" valign="top" class="vncellreq">
-ntpmode: 
-<?php		if (!empty($config['ntpd']['gps']['nmea'])) {
-			$ntpmode = (int) $config['ntpd']['gps']['nmea'];
-			if (!empty($config['ntpd']['gps']['speed'])) {
-				$ntpmode += (int) $config['ntpd']['gps']['speed'];
-			}
-			if (!empty($config['ntpd']['gps']['subsec'])) {
-				$ntpmode += 128;
-			}
-			$ntpcfg .= (string) $ntpmode;
-		}else{
-			$ntpcfg .= '0';
-		}
-echo $ntpmode; ?> ntpcfg: <?php echo $ntpcfg;?>
 			</td>
 			<td width="78%" class="vtable">A GPS connected via a serial port may be used as a reference clock for NTP. If the GPS also supports PPS and is properly configured, and connected, that GPS may also be used as a Pulse Per Second clock reference. NOTE: a USB GPS may work, but is not recommended due to USB bus timing issues.
 			<br/>
@@ -362,7 +348,7 @@ echo $ntpmode; ?> ntpcfg: <?php echo $ntpcfg;?>
 					<option value="MediaTek" <?php if($pconfig['type'] == 'MediaTek') echo "selected";?>>MediaTek</option>
 					<option value="SiRF" <?php if($pconfig['type'] == 'sirf') echo "selected";?>>SiRF</option>
 					<option value="U-Blox" <?php if($pconfig['type'] == 'U-Blox') echo "selected";?>>U-Blox</option>
-				</select><?php echo gettext(" This option allows you to select a known configuration.");?>
+				</select> <?php echo gettext("This option allows you to select a predefined configuration.");?>
 				<br/>
 				<br/>
 				<strong><?php echo gettext(" Note: ");?></strong><?php echo gettext("Default is the configuration of pfSense 2.1 and earlier"); ?>
@@ -418,19 +404,19 @@ echo $ntpmode; ?> ntpcfg: <?php echo $ntpcfg;?>
 			<td width="22%" valign="top" class="vncellreq">Fudge time 1</td>
 			<td width="78%" class="vtable">
 				<input name="gpsfudge1" type="text" class="formfld unknown" id="gpsfudge1" min="-1" max="1" size="20" value="<?=htmlspecialchars($pconfig['fudge1']);?>"><?php echo gettext("(seconds)");?><br>
-				<?php echo gettext("Fudge time 1 is used to specify the GPS PPS signal offset (default: 0.0)."); ?></td>
+				<?php echo gettext("Fudge time 1 is used to specify the GPS PPS signal offset";?> (<?php echo gettext("default";?>: 0.0).</td>
 		</tr>
 		<tr>
 			<td width="22%" valign="top" class="vncellreq">Fudge time 2</td>
 			<td width="78%" class="vtable">
 				<input name="gpsfudge2" type="text" class="formfld unknown" id="gpsfudge2" min="-1" max="1" size="20" value="<?=htmlspecialchars($pconfig['fudge2']);?>"><?php echo gettext("(seconds)");?><br>
-				<?php echo gettext("Fudge time 2 is used to specify the GPS time offset (default: 0.0)."); ?></td>
+				<?php echo gettext("Fudge time 2 is used to specify the GPS time offset";?> (<?php echo gettext("default";?>: 0.0).</td>
 		</tr>
 		<tr>
 			<td width="22%" valign="top" class="vncellreq">Stratum</td>
 			<td width="78%" class="vtable">
 				<input name="gpsstratum" type="text" class="formfld unknown" id="gpsstratum" max="16" size="20" value="<?=htmlspecialchars($pconfig['stratum']);?>"><?php echo gettext("(0-16)");?><br>
-				<?php echo gettext("This may be used to change the GPS Clock stratum (default: 0). This may be useful if, for some reason, you want ntpd to prefer a different clock"); ?></td>
+				<?php echo gettext("This may be used to change the GPS Clock stratum";?> (<?php echo gettext("default";?>: 0). <?php echo gettext("This may be useful if, for some reason, you want ntpd to prefer a different clock"); ?></td>
 		</tr>
 		<tr>
 			<td width="22%" valign="top" class="vncellreq">Flags</td>
@@ -472,7 +458,7 @@ echo $ntpmode; ?> ntpcfg: <?php echo $ntpcfg;?>
 							<input name="gpsflag4" type="checkbox" class="formcheckbox" id="gpsflag4" <?php if($pconfig['flag4']) echo " checked"; ?>>
 						</td>
 						<td>
-							<span class="vexpl"><?php echo gettext("Do not obscure location in timecode (default: obscured)."); ?></span>
+							<span class="vexpl"><?php echo gettext("Obscure location in timestamp (default: unobscured)."); ?></span>
 						</td>
 					</tr>
 					<tr>
@@ -490,7 +476,7 @@ echo $ntpmode; ?> ntpcfg: <?php echo $ntpcfg;?>
 			<td width="22%" valign="top" class="vncellreq">Clock ID</td>
 			<td width="78%" class="vtable">
 				<input name="gpsrefid" type="text" class="formfld unknown" id="gpsrefid" maxlength= "4" size="20" value="<?=htmlspecialchars($pconfig['refid']);?>"><?php echo gettext("(1 to 4 charactors)");?><br>
-				<?php echo gettext("This may be used to change the GPS Clock ID (default: GPS)."); ?></td>
+				<?php echo gettext("This may be used to change the GPS Clock ID");?> (<?php echo gettext("default");?>: GPS).</td>
 		</tr>
 		<tr>
 			<td width="22%" valign="top" class="vncellreq">GPS Initialization</td>
