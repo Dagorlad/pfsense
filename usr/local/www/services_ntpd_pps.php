@@ -69,7 +69,7 @@ include("head.inc");
 	<div id="mainarea">
 	<table class="tabcont" width="100%" border="0" cellpadding="6" cellspacing="0">
 		<tr>
-			<td colspan="2" valign="top" class="listtopic"><?=gettext("NTP Serial GPS Configuration"); ?></td>
+			<td colspan="2" valign="top" class="listtopic"><?=gettext("NTP PPS Configuration"); ?></td>
 		</tr>
 		<tr>
 			<td width="22%" valign="top" class="vncellreq">
@@ -79,6 +79,35 @@ include("head.inc");
 			<br/><?php echo gettext("At least 2 servers need to be configured under"); ?> <a href="system.php"><?php echo gettext("System > General"); ?></a> <?php echo gettext("to provide a time source."); ?>
 			</td>
 		</tr>
+<?php $serialports = glob("/dev/cua?[0-9]{,.[0-9]}", GLOB_BRACE); ?>
+<?php if (!empty($serialports)): ?>
+		<tr>
+			<td width="22%" valign="top" class="vncellreq">Serial port</td>
+			<td width="78%" class="vtable">
+				<select name="gpsport" class="formselect">
+					<option value="">none</option>
+					<?php foreach ($serialports as $port):
+						$shortport = substr($port,5);
+						$selected = ($shortport == $pconfig['port']) ? " selected" : "";?>
+						<option value="<?php echo $shortport;?>"<?php echo $selected;?>><?php echo $shortport;?></option>
+					<?php endforeach; ?>
+				</select>&nbsp;
+				<?php echo gettext("All serial ports are listed, be sure to pick the port with the GPS attached."); ?>
+				<br/><br/>
+				<select id="gpsspeed" name="ppsspeed" class="formselect">
+					<option value="0" <?php if(!$pconfig['speed']) echo "selected"; ?>>4800</option>
+					<option value="16" <?php if($pconfig['speed'] === '16') echo "selected";?>>9600</option>
+					<option value="32" <?php if($pconfig['speed'] === '32') echo "selected";?>>19200</option>
+					<option value="48" <?php if($pconfig['speed'] === '48') echo "selected";?>>38400</option>
+					<option value="64" <?php if($pconfig['speed'] === '64') echo "selected";?>>57600</option>
+					<option value="80" <?php if($pconfig['speed'] === '80') echo "selected";?>>115200</option>
+				</select>&nbsp;<?php echo gettext("Serial port baud rate (default: 4800)."); ?>
+				<br/>
+				<br/>
+				<?php echo gettext("Note: A higher baud rate is generally only helpful if the GPS is sending too many sentences. It is recommended to configure the GPS to send only one sentence at a baud rate of 4800 or 9600."); ?>
+			</td>
+		</tr>
+<?php endif; ?>
 </table>
 </form>
 <?php include("fend.inc"); ?>
