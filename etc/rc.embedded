@@ -28,6 +28,9 @@ mdmfs -S -M -s ${varsize} md /var
 
 # Create some needed directories
 /bin/mkdir -p /var/db
+# For tip and cu
+/bin/mkdir -p /var/spool
+/bin/mkdir -p /var/spool/lock
 
 # Ensure vi's recover directory is present
 /bin/mkdir -p /var/tmp/vi.recover/
