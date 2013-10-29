@@ -168,7 +168,7 @@ Default =	#Sponsored, probably a Ublox
 
 Generic =					#do nothing
 		
-Garmin =
+Garmin =	#most Garmin
 		$PGRMC,,,,,,,,,,3,,2,4*52	#enable PPS @ 100ms
 		$PGRMC1,,1,,,,,,W,,,,,,,*30	#enable WAAS
 		$PGRMO,,3*74			#turn off all sentences
@@ -343,11 +343,11 @@ U-Blox =	#U-Blox 5, 6 and probably 7
 			<?php /* Start with the original "Default", list a "Generic" and then specific configs alphabetically */ ?>
 				<select id="gpstype" name="gpstype" class="formselect" onchange="set_gps_default(this.form)">
 					<option value="Default" <?php if($pconfig['type'] == 'Default') echo "selected"; ?>>Default</option>
-					<option value="Generic" <?php if($pconfig['type'] == 'Generic') echo "selected";?>>Generic</option>
-					<option value="Garmin" <?php if($pconfig['type'] == 'Garmin') echo "selected";?>>Garmin</option>
-					<option value="MediaTek" <?php if($pconfig['type'] == 'MediaTek') echo "selected";?>>MediaTek</option>
-					<option value="SiRF" <?php if($pconfig['type'] == 'sirf') echo "selected";?>>SiRF</option>
-					<option value="U-Blox" <?php if($pconfig['type'] == 'U-Blox') echo "selected";?>>U-Blox</option>
+					<option value="Generic" title="Generic" <?php if($pconfig['type'] == 'Generic') echo "selected";?>>Generic</option>
+					<option value="Garmin" title="$PGRM... Most Garmin" <?php if($pconfig['type'] == 'Garmin') echo "selected";?>>Garmin</option>
+					<option value="MediaTek" title="$PMTK... Adafruit, Fastrax, some Garmin, Sure Electronics and others" <?php if($pconfig['type'] == 'MediaTek') echo "selected";?>>MediaTek</option>
+					<option value="SiRF" title="$PSRF... Used by many devices" <?php if($pconfig['type'] == 'sirf') echo "selected";?>>SiRF</option>
+					<option value="U-Blox" title="$PUBX... U-Blox 5, 6 and probably 7" <?php if($pconfig['type'] == 'U-Blox') echo "selected";?>>U-Blox</option>
 				</select> <?php echo gettext("This option allows you to select a predefined configuration.");?>
 				<br/>
 				<br/>
