@@ -353,6 +353,7 @@ U-Blox =	#U-Blox 5, 6 and probably 7
 				<br/>
 				<strong><?php echo gettext(" Note: ");?></strong><?php echo gettext("Default is the configuration of pfSense 2.1 and earlier"); ?>
 				<?php echo gettext(" (not recommended). Select Generic if your GPS is not listed.)"); ?>
+				<strong><?php echo gettext(" Note: ");?></strong><?php echo gettext("The perdefined configurations assume your GPS has already been set to NMEA mode and a baud rate of 4800."); ?>
 			</td>
 		</tr>
 
@@ -387,15 +388,15 @@ U-Blox =	#U-Blox 5, 6 and probably 7
 		</tr>
 <?php endif; ?>
 		<tr>
-<?php /* 1 = $GPMRC, 2 = $GPGGA, 4 = $GPGLL, 8 = $GPZDA or $GPZDG */?>
+<?php /* 1 = MRC, 2 = GGA, 4 = GLL, 8 = ZDA or ZDG */?>
 			<td width="22%" valign="top" class="vncellreq">NMEA sentences</td>
 			<td width="78%" class="vtable">
 				<select id="gpsnmea" name="gpsnmea[]" multiple="true" class="formselect">
 					<option value="0" <?php if(!$pconfig['nmea']) echo "selected"; ?>>All</option>
-					<option value="1" <?php if($pconfig['nmea'] & 1) echo "selected";?>>$GPMRC</option>
-					<option value="2" <?php if($pconfig['nmea'] & 2) echo "selected";?>>$GPGGA</option>
-					<option value="4" <?php if($pconfig['nmea'] & 4) echo "selected";?>>$GPGLL</option>
-					<option value="8" <?php if($pconfig['nmea'] & 8) echo "selected";?>>$GPZDA or $GPZDG</option>
+					<option value="1" <?php if($pconfig['nmea'] & 1) echo "selected";?>>MRC</option>
+					<option value="2" <?php if($pconfig['nmea'] & 2) echo "selected";?>>GGA</option>
+					<option value="4" <?php if($pconfig['nmea'] & 4) echo "selected";?>>GLL</option>
+					<option value="8" <?php if($pconfig['nmea'] & 8) echo "selected";?>>ZDA or ZDG</option>
 				</select></br>
 				<?php echo gettext("By default NTP will listen for all supported NMEA sentences. Here one or more sentences to listen for may be specified."); ?>
 			</td>
@@ -488,7 +489,9 @@ U-Blox =	#U-Blox 5, 6 and probably 7
 					<p>
 					<textarea name="gpsinitcmd" class="formpre" id="gpsinitcmd" cols="65" rows="7"><?=htmlspecialchars(base64_decode($pconfig['initcmd'])); /*resultmatch*/?></textarea><br />
 					<?php echo gettext("Note: Commands entered here will be sent to the GPS during initialization. Please read and understand your GPS documentation before making any changes here.");?><br /><br />
-					<strong><?php echo gettext("NMEA checksum");?>:</strong> <?php echo gettext("Enter the text between &quot;$&quot; and &quot;*&quot; of a NMEA command string:");?><br /> $<input name="nmeastring" type="text" class="formfld unknown" id="nmeastring" size="30" value="">*<span id="nmeachecksum"><?php echo gettext("checksum");?></span>&nbsp&nbsp
+					<strong><?php echo gettext("NMEA checksum calculator");?>:</strong>
+					<br />
+					<?php echo gettext("Enter the text between &quot;$&quot; and &quot;*&quot; of a NMEA command string:");?><br /> $<input name="nmeastring" type="text" class="formfld unknown" id="nmeastring" size="30" value="">*<span id="nmeachecksum"><?php echo gettext("checksum");?></span>&nbsp&nbsp
 					<input type="button" onClick="NMEAChecksum(nmeastring.value)" value="<?=gettext("Calculate NMEA checksum");?>"></input><br />
 				</div>
 			</td>

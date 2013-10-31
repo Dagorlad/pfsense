@@ -26,11 +26,11 @@
 	POSSIBILITY OF SUCH DAMAGE.
 */
 /*
-	pfSense_MODULE:	ntpd_gps
+	pfSense_MODULE:	ntpd_pps
 */
 
 ##|+PRIV
-##|*IDENT=page-services-ntpd-gps
+##|*IDENT=page-services-ntpd-pps
 ##|*NAME=Services: NTP PPS page
 ##|*DESCR=Allow access to the 'Services: NTP PPS' page..
 ##|*MATCH=services_ntpd_pps.php*
