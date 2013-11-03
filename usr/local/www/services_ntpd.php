@@ -95,6 +95,36 @@ if ($_POST) {
 		elseif (isset($config['ntpd']['peerstats']))
 			unset($config['ntpd']['peerstats']);
 
+		if (empty($_POST['kod']))
+			$config['ntpd']['kod'] = 'on';
+		elseif (isset($config['ntpd']['kod']))
+			unset($config['ntpd']['kod']);
+
+		if (empty($_POST['nomodify']))
+			$config['ntpd']['nomodify'] = 'on';
+		elseif (isset($config['ntpd']['nomodify']))
+			unset($config['ntpd']['nomodify']);
+
+		if (!empty($_POST['noquery']))
+			$config['ntpd']['noquery'] = $_POST['noquery'];
+		elseif (isset($config['ntpd']['noquery']))
+			unset($config['ntpd']['noquery']);
+
+		if (!empty($_POST['noserve']))
+			$config['ntpd']['noserve'] = $_POST['noserve'];
+		elseif (isset($config['ntpd']['noserve']))
+			unset($config['ntpd']['noserve']);
+
+		if (empty($_POST['nopeer']))
+			$config['ntpd']['nopeer'] = 'on';
+		elseif (isset($config['ntpd']['nopeer']))
+			unset($config['ntpd']['nopeer']);
+
+		if (empty($_POST['notrap']))
+			$config['ntpd']['notrap'] = 'on';
+		elseif (isset($config['ntpd']['notrap']))
+			unset($config['ntpd']['notrap']);
+
 		if (!empty($_POST['statsgraph']))
 			$config['ntpd']['statsgraph'] = $_POST['statsgraph'];
 		elseif (isset($config['ntpd']['statsgraph']))
@@ -117,7 +147,7 @@ if ($_POST) {
 	}
 }
 
-$pconfig['ntpd'] = &$config['ntpd'];
+$pconfig = &$config['ntpd'];
 $pgtitle = array(gettext("Services"),gettext("NTP"));
 $shortcut_section = "ntp";
 include("head.inc");
@@ -134,7 +164,7 @@ include("head.inc");
 
 <body link="#0000CC" vlink="#0000CC" alink="#0000CC">
 <?php include("fbegin.inc"); ?>
-<form action="services_ntpd.php" method="post" name="iform" id="iform" enctype="multipart/form-data" accept-charset=utf-8>
+<form action="services_ntpd.php" method="post" name="iform" id="iform" enctype="multipart/form-data" accept-charset="utf-8">
 <?php if ($input_errors) print_input_errors($input_errors); ?>
 <?php if ($savemsg) print_info_box($savemsg); ?>
 
@@ -215,25 +245,25 @@ include("head.inc");
 				<td width="22%" valign="top" class="vncellreq">Orphan mode</td>
 				<td width="78%" class="vtable">
 					<input name="gpsorphan" type="text" class="formfld unknown" id="gpsorphan" min="1" max="16" size="20" value="<?=htmlspecialchars($pconfig['orphan']);?>"><?php echo gettext("(0-15)");?><br>
-					<?php echo gettext("Orphan mode allows the system clock to be used when no other clocks are available. The number here specifies the stratum reported during orphan mode and should normally be set for a number high enough to insure any others servers available to clients are preferred over this server. (default: 12)."); ?>
+					<?php echo gettext("Orphan mode allows the system clock to be used when no other clocks are available. The number here specifies the stratum reported during orphan mode and should normally be set to a number high enough to insure that any other servers available to clients are preferred over this server. (default: 12)."); ?>
 				</td>
 			</tr>
 			<tr>
 				<td width="22%" valign="top" class="vncellreq">NTP graphs</td>
 				<td width="78%" class="vtable">
-					<input name="statsgraph" type="checkbox" class="formcheckbox" id="statsgraph" <?php if($pconfig['statsgraph']) echo " checked"; ?>>
+					<input name="statsgraph" type="checkbox" class="formcheckbox" id="statsgraph" <?php if($pconfig['statsgraph']) echo ' checked'; ?>>
 					<?php echo gettext("Enable rrd graphs of NTP statistics (default: disabled)."); ?>
 				</td>
 			</tr>
 			<tr>
 				<td width="22%" valign="top" class="vncellreq">Syslog logging</td>
 				<td width="78%" class="vtable">
-					<?php echo gettext("These options enable additional messages from NTP to be written to the System Log."); ?>
+					<?php echo gettext("These options enable additional messages from NTP to be written to the System Log");?> (<a href="diag_logs_ntpd.php"><?php echo gettext("Status > System Logs > NTP"); ?></a>).
 					<br/><br/>
-					<input name="logpeer" type="checkbox" class="formcheckbox" id="logpeer" <?php if($pconfig['logpeer']) echo " checked"; ?>>
+					<input name="logpeer" type="checkbox" class="formcheckbox" id="logpeer"<?php if($pconfig['logpeer']) echo ' checked'; ?>>
 					<?php echo gettext("Enable logging of peer messages (default: disabled)."); ?>
 					<br/>
-					<input name="logsys" type="checkbox" class="formcheckbox" id="logsys" <?php if($pconfig['logsys']) echo " checked"; ?>>
+					<input name="logsys" type="checkbox" class="formcheckbox" id="logsys"<?php if($pconfig['logsys']) echo ' checked'; ?>>
 					<?php echo gettext("Enable logging of system messages (default: disabled)."); ?>
 				</td>
 			</tr>
@@ -246,14 +276,43 @@ include("head.inc");
 					<div id="showstatistics" style="display:none">
 					<strong><?php echo gettext("Warning: ")?></strong><?php echo gettext("these options will create persistant daily log files in /var/log/ntp."); ?>
 					<br/><br/>
-					<input name="clockstats" type="checkbox" class="formcheckbox" id="clockstats" <?php if($pconfig['clockstats']) echo " checked"; ?>>
+					<input name="clockstats" type="checkbox" class="formcheckbox" id="clockstats"<?php if($pconfig['clockstats']) echo ' checked'; ?>>
 					<?php echo gettext("Enable logging of reference clock statistics (default: disabled)."); ?>
 					<br/>
-					<input name="loopstats" type="checkbox" class="formcheckbox" id="loopstats" <?php if($pconfig['loopstats']) echo " checked"; ?>>
+					<input name="loopstats" type="checkbox" class="formcheckbox" id="loopstats"<?php if($pconfig['loopstats']) echo ' checked'; ?>>
 					<?php echo gettext("Enable logging of clock discipline statistics (default: disabled)."); ?>
 					<br/>
-					<input name="peerstats" type="checkbox" class="formcheckbox" id="peerstats" <?php if($pconfig['peerstats']) echo " checked"; ?>>
+					<input name="peerstats" type="checkbox" class="formcheckbox" id="peerstats"<?php if($pconfig['peerstats']) echo ' checked'; ?>>
 					<?php echo gettext("Enable logging of NTP peer statistics (default: disabled)."); ?>
+					</div>
+				</td>
+			</tr>
+			<tr>
+				<td width="22%" valign="top" class="vncellreq">Access restrictions</td>
+				<td width="78%" class="vtable">
+					<div id="showrestrictbox">
+					<input type="button" onClick="show_advanced('showrestrictbox', 'showrestrict')" value="<?=gettext("Advanced");?>"></input> - <?=gettext("Show access restriction options");?></a>
+					</div>
+					<div id="showrestrict" style="display:none">
+					<?php echo gettext("these options control access to NTP from the WAN."); ?>
+					<br/><br/>
+					<input name="kod" type="checkbox" class="formcheckbox" id="kod"<?php if(!$pconfig['kod']) echo ' checked'; ?>>
+					<?php echo gettext("Enable Kiss-o'-death packets (default: enabled)."); ?>
+					<br/>
+					<input name="nomodify" type="checkbox" class="formcheckbox" id="nomodify"<?php if(!$pconfig['nomodify']) echo ' checked'; ?>>
+					<?php echo gettext("Deny state modifications (i.e. run time configuration) by ntpq and ntpdc (default: enabled)."); ?>
+					<br/>
+					<input name="noquery" type="checkbox" class="formcheckbox" id="noquery"<?php if($pconfig['noquery']) echo ' checked'; ?>>
+					<?php echo gettext("Disable ntpq and ntpdc queries (default: disabled)."); ?>
+					<br/>
+					<input name="noserve" type="checkbox" class="formcheckbox" id="noserve"<?php if($pconfig['noserve']) echo ' checked'; ?>>
+					<?php echo gettext("Disable all except ntpq and ntpdc queries (default: disabled)."); ?>
+					<br/>
+					<input name="nopeer" type="checkbox" class="formcheckbox" id="nopeer"<?php if(!$pconfig['nopeer']) echo ' checked'; ?>>
+					<?php echo gettext("Deny packets that attempt a peer association (default: enabled)."); ?>
+					<br/>
+					<input name="notrap" type="checkbox" class="formcheckbox" id="notrap"<?php if(!$pconfig['notrap']) echo ' checked'; ?>>
+					<?php echo gettext("Deny mode 6 control message trap service (default: enabled)."); ?>
 					</div>
 				</td>
 			</tr>
@@ -269,7 +328,7 @@ include("head.inc");
 					<br/><br/>
 					<?php echo gettext("Enter Leap second configuration as text:");?><br />
 					<textarea name="leaptxt" class="formpre" id="leaptxt" cols="65" rows="7"><?php $text = base64_decode(chunk_split($pconfig['leapsec'])); echo $text;?></textarea><br/>
-					<strong><?php echo gettext("Or");?></strong><?php echo gettext(", select a file to upload:");?>
+					<strong><?php echo gettext("Or");?></strong>, <?php echo gettext("select a file to upload:");?>
 					<input type="file" name="leapfile" class="formfld file" id="leapfile">
 					</div>
 				</td>
@@ -286,18 +345,3 @@ include("head.inc");
 <?php include("fend.inc"); ?>
 </body>
 </html>
-<!--
-/*
-</br><p> $text</p></br>
-<?php $text = base64_decode(chunk_split($pconfig['leapsec']));?>
-<?php var_dump($text); ?>
-</br><p> _FILES</p></br>
-<?php var_dump($_FILES); ?>
-</br><p> $config</p></br>
-<?php var_dump($config['ntpd']['gps']); ?>
-</br><p> $_POST</p></br>
-<?php var_dump($_POST); ?>
-</br><p> $pconfig</p></br>
-<?php var_dump($pconfig); ?>
-*/
--->

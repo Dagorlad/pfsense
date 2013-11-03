@@ -33,9 +33,8 @@
 	pfSense_BUILDER_BINARIES:	/usr/sbin/powerd	/usr/bin/killall	/sbin/sysctl	/sbin/route
 	pfSense_BUILDER_BINARIES:	/bin/hostname	/bin/ls	/usr/sbin/syslogd	
 	pfSense_BUILDER_BINARIES:	/usr/sbin/pccardd	/usr/local/sbin/lighttpd	/bin/chmod 	/bin/mkdir
-	pfSense_BUILDER_BINARIES:	/usr/bin/tar		/usr/local/bin/ntpd	/usr/local/bin/ntpdate
+	pfSense_BUILDER_BINARIES:	/usr/bin/tar		/usr/local/bin/ntpd	/usr/sbin/ntpdate
 	pfSense_BUILDER_BINARIES:	/usr/bin/nohup	/sbin/dmesg	/usr/local/sbin/atareinit	/sbin/kldload
-	pfSense_BUILDER_BINARIES:	/usr/local/sbin/filterdns
 	pfSense_MODULE:	utils
 */
 
@@ -456,21 +455,12 @@ function system_routing_configure($interface = "") {
 		}
 	}
 
-	system_staticroutes_configure($interface, false);
-
-	return 0;
-}
-
-function system_staticroutes_configure($interface = "", $update_dns = false) {
-	global $config, $g, $aliastable;
-
-	$filterdns_list = array();
-
-	$static_routes = get_staticroutes(false, true);
+	$static_routes = get_staticroutes();
 	if (count($static_routes)) {
 		$gateways_arr = return_gateways_array(false, true);
 
 		foreach ($static_routes as $rtent) {
+			$gatewayip = "";
 			if (empty($gateways_arr[$rtent['gateway']])) {
 				log_error(sprintf(gettext("Static Routes: Gateway IP could not be found for %s"), $rtent['network']));
 				continue;
@@ -479,6 +469,12 @@ function system_staticroutes_configure($interface = "", $update_dns = false) {
 			if (!empty($interface) && $interface != $gateway['friendlyiface'])
 				continue;
 
+			/* XXX: This is a bit dangerous in case of routing daemons!? */
+			if(isset($rtent['disabled'])) {
+				mwexec("/sbin/route delete " . escapeshellarg($rtent['network']), true);
+				continue;
+			}
+
 			$gatewayip = $gateway['gateway'];
 			$interfacegw = $gateway['interface'];
 
@@ -486,80 +482,25 @@ function system_staticroutes_configure($interface = "", $update_dns = false) {
 			if (!strcasecmp("Null", substr($rtent['gateway'], 0, 3)))
 				$blackhole = "-blackhole";
 
-			if (!is_fqdn($rtent['network']) && !is_subnet($rtent['network']))
-				continue;
-
-			$dnscache = array();
-			if ($update_dns === true) {
-				if (is_subnet($rtent['network']))
-					continue;
-				$dnscache = explode("\n", trim(compare_hostname_to_dnscache($rtent['network'])));
-				if (empty($dnscache))
-					continue;
-			}
-
-			if (is_subnet($rtent['network']))
-				$ips = array($rtent['network']);
-			else {
-				if (!isset($rtent['disabled']))
-					$filterdns_list[] = $rtent['network'];
-				$ips = add_hostname_to_watch($rtent['network']);
-			}
-
-			foreach ($dnscache as $ip) {
-				if (in_array($ip, $ips))
-					continue;
-				mwexec("/sbin/route delete " . escapeshellarg($ip), true);
-			}
-
-			if (isset($rtent['disabled'])) {
-				/* XXX: This is a bit dangerous in case of routing daemons!? */
-				foreach ($ips as $ip)
-					mwexec("/sbin/route delete " . escapeshellarg($ip), true);
-				continue;
-			}
-
-			foreach ($ips as $ip) {
-				if (is_ipaddrv4($ip))
-					$ip .= "/32";
-				else if (is_ipaddrv6($ip))
-					$ip .= "/128";
-
-				$inet = (is_subnetv6($ip) ? "-inet6" : "-inet");
-
-				$cmd = "/sbin/route change {$inet} {$blackhole} " . escapeshellarg($ip) . " ";
-
-				if (is_subnet($ip))
-					if (is_ipaddr($gatewayip))
-						mwexec($cmd . escapeshellarg($gatewayip));
-					else if (!empty($interfacegw))
-						mwexec($cmd . "-iface " . escapeshellarg($interfacegw));
+			if (is_subnetv6($rtent['network'])) {
+				if (is_ipaddrv6($gatewayip))
+					mwexec("/sbin/route change -inet6 {$blackhole} " . escapeshellarg($rtent['network']) .
+						" " . escapeshellarg($gatewayip));
+				else if (!empty($interfacegw))
+					mwexec("/sbin/route change -inet6 {$blackhole} " . escapeshellarg($rtent['network']) .
+						" -iface " . escapeshellarg($interfacegw));
+			 } else if (is_subnetv4($rtent['network'])) {
+				if (is_ipaddrv4($gatewayip))
+					mwexec("/sbin/route change -inet {$blackhole} " . escapeshellarg($rtent['network']) .
+						" " . escapeshellarg($gatewayip));
+				else if (!empty($interfacegw))
+					mwexec("/sbin/route change -inet {$blackhole} " . escapeshellarg($rtent['network']) .
+						" -iface " . escapeshellarg($interfacegw));
 			}
 		}
 		unset($gateways_arr);
 	}
 	unset($static_routes);
-
-	if ($update_dns === false) {
-		if (count($filterdns_list)) {
-			$interval = 60;
-			$hostnames = "";
-			array_unique($filterdns_list);
-			foreach ($filterdns_list as $hostname)
-				$hostnames .= "cmd {$hostname} '/usr/local/sbin/pfSctl -c \"service reload routedns\"'\n";
-			file_put_contents("{$g['varetc_path']}/filterdns-route.hosts", $hostnames);
-			unset($hostnames);
-
-			if (isvalidpid("{$g['varrun_path']}/filterdns-route.pid"))
-				sigkillbypid("{$g['varrun_path']}/filterdns-route.pid", "HUP");
-			else
-				mwexec("/usr/local/sbin/filterdns -p {$g['varrun_path']}/filterdns-route.pid -i {$interval} -c {$g['varetc_path']}/filterdns-route.hosts -d 1");
-		} else {
-			killbypid("{$g['varrun_path']}/filterdns-route.pid");
-			@unlink("{$g['varrun_path']}/filterdns-route.pid");
-		}
-	}
-	unset($filterdns_list);
 
 	return 0;
 }
@@ -769,23 +710,7 @@ EOD;
 		if (!is_dir("{$g['dhcpd_chroot_path']}/var/run"))
 			exec("/bin/mkdir -p {$g['dhcpd_chroot_path']}/var/run");
 
-		$sourceip = "";
-		if (!empty($syslogcfg['sourceip'])) {
-			if ($syslogcfg['ipproto'] == "ipv6") {
-				$ifaddr = is_ipaddr($syslogcfg['sourceip']) ? $syslogcfg['sourceip'] : get_interface_ipv6($syslogcfg['sourceip']);
-				if (!is_ipaddr($ifaddr))
-					$ifaddr = get_interface_ip($syslogcfg['sourceip']);
-			} else {
-				$ifaddr = is_ipaddr($syslogcfg['sourceip']) ? $syslogcfg['sourceip'] : get_interface_ip($syslogcfg['sourceip']);
-				if (!is_ipaddr($ifaddr))
-					$ifaddr = get_interface_ipv6($syslogcfg['sourceip']);
-			}
-			if (is_ipaddr($ifaddr)) {
-				$sourceip = "-b {$ifaddr}";
-			}
-		}
-
-		$retval = mwexec_bg("/usr/sbin/syslogd -s -c -c -l {$g['dhcpd_chroot_path']}/var/run/log -f {$g['varetc_path']}/syslog.conf {$sourceip}");
+		$retval = mwexec_bg("/usr/sbin/syslogd -s -c -c -l {$g['dhcpd_chroot_path']}/var/run/log -f {$g['varetc_path']}/syslog.conf");
 
 	} else {
 		$retval = mwexec_bg("/usr/sbin/syslogd -s -c -c -l {$g['dhcpd_chroot_path']}/var/run/log");
@@ -1289,6 +1214,7 @@ function system_timezone_configure() {
 }
 
 function system_ntp_setup_gps($serialport) {
+	global $config, $g;
 	$gps_device = '/dev/gps0';
 	$serialport = '/dev/'.$serialport;
 
@@ -1301,25 +1227,37 @@ function system_ntp_setup_gps($serialport) {
 	symlink($serialport, $gps_device);
 
 	/* Send the following to the GPS port to initialize the GPS */
-	$gps_init = <<<EOF
-\$PUBX,40,GSV,0,0,0,0*59
-\$PUBX,40,GLL,0,0,0,0*5C
-\$PUBX,40,ZDA,0,0,0,0*44
-\$PUBX,40,VTG,0,0,0,0*5E
-\$PUBX,40,GSV,0,0,0,0*59
-\$PUBX,40,GSA,0,0,0,0*4E
-\$PUBX,40,GGA,0,0,0,0
-\$PUBX,40,TXT,0,0,0,0
-\$PUBX,40,RMC,0,0,0,0*46
-\$PUBX,41,1,0007,0003,4800,0
-\$PUBX,40,ZDA,1,1,1,1
-EOF;
-	file_put_contents("/tmp/gps.init", $gps_init);
+	if (isset($config['ntpd']['gps']['type'])) {
+		$gps_init = base64_decode($config['ntpd']['gps']['initcmd']);
+	}else{
+		$gps_init = base64_decode('JFBVQlgsNDAsR1NWLDAsMCwwLDAqNTkNCiRQVUJYLDQwLEdMTCwwLDAsMCwwKjVDDQokUFVCWCw0MCxaREEsMCwwLDAsMCo0NA0KJFBVQlgsNDAsVlRHLDAsMCwwLDAqNUUNCiRQVUJYLDQwLEdTViwwLDAsMCwwKjU5DQokUFVCWCw0MCxHU0EsMCwwLDAsMCo0RQ0KJFBVQlgsNDAsR0dBLDAsMCwwLDANCiRQVUJYLDQwLFRYVCwwLDAsMCwwDQokUFVCWCw0MCxSTUMsMCwwLDAsMCo0Ng0KJFBVQlgsNDEsMSwwMDA3LDAwMDMsNDgwMCwwDQokUFVCWCw0MCxaREEsMSwxLDEsMQ==');
+	}
+	file_put_contents('/tmp/gps.init', $gps_init);
 	`cat /tmp/gps.init > $serialport`;
 
 	/* Add /etc/remote entry in case we need to read from the GPS with tip */
 	if (intval(`grep -c '^gps0' /etc/remote`) == 0)
-		`echo "gps0:dv={$serialport}:br#4800:pa=none:" >> /etc/remote`;
+		$gpsbaud = '4800';
+		if (!empty($config['ntpd']['gps']['speed'])) {
+			switch($config['ntpd']['gps']['speed']) {
+				case '16':
+					$gpsbaud = '9600';
+					break;
+				case '32':
+					$gpsbaud = '19200';
+					break;
+				case '48':
+					$gpsbaud = '38400';
+					break;
+				case '64':
+					$gpsbaud = '57600';
+					break;
+				case '80':
+					$gpsbaud = '115200';
+					break;
+			}
+		}
+		`echo "gps0:dv={$serialport}:br#{$gpsbaud}:pa=none:" >> /etc/remote`;
 
 	conf_mount_ro();
 
@@ -1342,11 +1280,81 @@ function system_ntp_configure($start_ntpd=true) {
 	$ntpcfg .= "# \n\n";
 	$ntpcfg .= "tinker panic 0 \n";
 
-	if (!empty($config['ntpd']['gpsport'])
+	/* Add Orphan mode */
+	$ntpcfg .= "# Orphan mode stratum\n";
+	$ntpcfg .= 'tos orphan ';
+	if (!empty($config['ntpd']['orphan'])) {
+		$ntpcfg .= $config['ntpd']['orphan'];
+	}else{
+		$ntpcfg .= '12';
+	}
+	$ntpcfg .= "\n";
+
+	/* Add GPS configuration */
+	if (!empty($config['ntpd']['gps'])
+		&& file_exists('/dev/'.$config['ntpd']['gps']['port'])
+		&& system_ntp_setup_gps($config['ntpd']['gps']['port'])) {
+		$ntpcfg .= "\n";
+		$ntpcfg .= "# GPS Setup\n";
+		$ntpcfg .= 'server 127.127.20.0 mode ';
+		if (!empty($config['ntpd']['gps']['nmea']) || !empty($config['ntpd']['gps']['speed']) || !empty($config['ntpd']['gps']['subsec'])) {
+			if (!empty($config['ntpd']['gps']['nmea'])) {
+				$ntpmode = (int) $config['ntpd']['gps']['nmea'];
+			}
+			if (!empty($config['ntpd']['gps']['speed'])) {
+				$ntpmode += (int) $config['ntpd']['gps']['speed'];
+			}
+			if (!empty($config['ntpd']['gps']['subsec'])) {
+				$ntpmode += 128;
+			}
+			$ntpcfg .= (string) $ntpmode;
+		}else{
+			$ntpcfg .= '0';
+		}
+		$ntpcfg .= ' minpoll 4 maxpoll 4';
+		if (empty($config['ntpd']['gps']['prefer'])) { /*note: this one works backwards */
+			$ntpcfg .= ' prefer'; 
+		}
+		if (!empty($config['ntpd']['gps']['noselect'])) {
+			$ntpcfg .= ' noselect ';
+		}
+		$ntpcfg .= "\n";
+		$ntpcfg .= 'fudge 127.127.20.0';
+		if (!empty($config['ntpd']['gps']['fudge1'])) {
+			$ntpcfg .= ' time1 ';
+			$ntpcfg .= $config['ntpd']['gps']['fudge1'];
+		}
+		if (!empty($config['ntpd']['gps']['fudge2'])) {
+			$ntpcfg .= ' time2 ';
+			$ntpcfg .= $config['ntpd']['gps']['fudge2'];
+		}
+		if (!empty($config['ntpd']['gps']['flag1'])) {
+			$ntpcfg .= ' flag1 1';
+		}else{
+			$ntpcfg .= ' flag1 0';
+		}
+		if (!empty($config['ntpd']['gps']['flag2'])) {
+			$ntpcfg .= ' flag2 1';
+		}
+		if (!empty($config['ntpd']['gps']['flag3'])) {
+			$ntpcfg .= ' flag3 1';
+		}else{
+			$ntpcfg .= ' flag3 0';
+		}
+		if (!empty($config['ntpd']['gps']['flag4'])) {
+			$ntpcfg .= ' flag4 1';
+		}
+		if (!empty($config['ntpd']['gps']['refid'])) {
+			$ntpcfg .= ' refid ';
+			$ntpcfg .= $config['ntpd']['gps']['refid'];
+		}
+		$ntpcfg .= "\n";
+	}elseif (!empty($config['ntpd']['gpsport'])
 		&& file_exists('/dev/'.$config['ntpd']['gpsport'])
 		&& system_ntp_setup_gps($config['ntpd']['gpsport'])) {
+		/* This handles a 2.1 and earlier config */
 		$ntpcfg .= "# GPS Setup\n";
-		$ntpcfg .= "server 127.127.20.0 mode 0 minpoll 4 maxpoll 4 prefer\n";
+		$ntpcfg .= "server 127.127.20.0 mode 2 minpoll 4 maxpoll 4 prefer\n";
 		$ntpcfg .= "fudge 127.127.20.0 time1 0.155 time2 0.000 flag1 1 flag2 0 flag3 1\n";
 		// Fall back to local clock if GPS is out of sync?
 		$ntpcfg .= "server 127.127.1.0\n";
@@ -1358,14 +1366,81 @@ function system_ntp_configure($start_ntpd=true) {
 	foreach (explode(' ', $config['system']['timeservers']) as $ts)
 		$ntpcfg .= "server {$ts} iburst maxpoll 9\n";
 
+	$ntpcfg .= "\n\n";
 	$ntpcfg .= "enable monitor\n";
-	$ntpcfg .= "enable stats\n";
-	$ntpcfg .= "statistics clockstats\n";
+	if (!empty($config['ntpd']['clockstats']) || !empty($config['ntpd']['loopstats']) || !empty($config['ntpd']['peerstats'])) {
+		$ntpcfg .= "enable stats\n";
+		$ntpcfg .= 'statistics';
+		if (!empty($config['ntpd']['clockstats'])) {
+			$ntpcfg .= ' clockstats';
+		}
+		if (!empty($config['ntpd']['loopstats'])) {
+			$ntpcfg .= ' loopstats';
+		}
+		if (!empty($config['ntpd']['peerstats'])) {
+			$ntpcfg .= ' peerstats';
+		}
+		$ntpcfg .= "\n";
+	}
 	$ntpcfg .= "statsdir {$statsdir}\n";
-	$ntpcfg .= "logconfig =syncall +clockall\n";
+	$ntpcfg .= 'logconfig =syncall +clockall';
+	if (!empty($config['ntpd']['logpeer'])) {
+		$ntpcfg .= ' +peerall';
+	}
+	if (!empty($config['ntpd']['logsys'])) {
+		$ntpcfg .= ' +sysall';
+	}
+	$ntpcfg .= "\n";
 	$ntpcfg .= "driftfile {$driftfile}\n";
-	$ntpcfg .= "restrict default kod nomodify notrap nopeer\n";
-	$ntpcfg .= "restrict -6 default kod nomodify notrap nopeer\n";
+	/* Access restrictions */
+	$ntpcfg .= 'restrict default';
+	if (empty($config['ntpd']['kod'])) { /*note: this one works backwards */
+		$ntpcfg .= ' kod limited'; 
+	}
+	if (empty($config['ntpd']['nomodify'])) { /*note: this one works backwards */
+		$ntpcfg .= ' nomodify'; 
+	}
+	if (!empty($config['ntpd']['noquery'])) {
+		$ntpcfg .= ' noquery';
+	}
+	if (empty($config['ntpd']['nopeer'])) { /*note: this one works backwards */
+		$ntpcfg .= ' nopeer'; 
+	}
+	if (empty($config['ntpd']['notrap'])) { /*note: this one works backwards */
+		$ntpcfg .= ' notrap'; 
+	}
+	if (!empty($config['ntpd']['noserve'])) {
+		$ntpcfg .= ' noserve';
+	}
+	$ntpcfg .= "\nrestrict -6 default";
+	if (empty($config['ntpd']['kod'])) { /*note: this one works backwards */
+		$ntpcfg .= ' kod limited'; 
+	}
+	if (empty($config['ntpd']['nomodify'])) { /*note: this one works backwards */
+		$ntpcfg .= ' nomodify'; 
+	}
+	if (!empty($config['ntpd']['noquery'])) {
+		$ntpcfg .= ' noquery';
+	}
+	if (empty($config['ntpd']['nopeer'])) { /*note: this one works backwards */
+		$ntpcfg .= ' nopeer'; 
+	}
+	if (!empty($config['ntpd']['noserve'])) {
+		$ntpcfg .= ' noserve';
+	}
+	if (empty($config['ntpd']['notrap'])) { /*note: this one works backwards */
+		$ntpcfg .= ' notrap'; 
+	}
+	$ntpcfg .= "\n";
+
+	/* A leapseconds file is really only useful if this clock is stratum 1 */
+	$ntpcfg .= "\n";
+	if (!empty($config['ntpd']['leapsec'])) {
+		$leapsec .= base64_decode($config['ntpd']['leapsec']);
+		file_put_contents('/var/db/leap-seconds', $leapsec);
+		$ntpcfg .= "leapfile /var/db/leap-seconds\n";
+	}
+	
 
 	if (empty($config['ntpd']['interface']))
 		if (is_array($config['installedpackages']['openntpd']) && !empty($config['installedpackages']['openntpd']['config'][0]['interface']))
@@ -1421,7 +1496,7 @@ function sync_system_time() {
 
 	/* foreach through servers and write out to ntpd.conf */
 	foreach (explode(' ', $config['system']['timeservers']) as $ts) {
-		mwexec("/usr/local/bin/ntpdate -s $ts");
+		mwexec("/usr/sbin/ntpdate -s $ts");
 	}
 	
 	if ($g['booting'])
