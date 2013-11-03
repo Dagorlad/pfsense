@@ -146,11 +146,13 @@ include("head.inc");
 ?>
 
 <script type="text/javascript">
-	function show_gps_init() {
-		document.getElementById("showgpsinitbox").innerHTML='';
-		aodiv = document.getElementById('showgpsinit');
+
+	function show_advanced(showboxID, configvalueID) {
+		document.getElementById(showboxID).innerHTML='';
+		aodiv = document.getElementById(configvalueID);
 		aodiv.style.display = "block";
 	}
+
 <?php /*	
 init commands are Base64 encoded
 Default =	#Sponsored, probably a Ublox
@@ -483,7 +485,7 @@ U-Blox =	#U-Blox 5, 6 and probably 7
 			<td width="22%" valign="top" class="vncellreq">GPS Initialization</td>
 			<td width="78%" class="vtable">
 				<div id="showgpsinitbox">
-					<input type="button" onClick="show_gps_init()" value="<?=gettext("Advanced");?>"></input> - <?=gettext("Show GPS Initialization commands");?></a>
+					<input type="button" onClick="show_advanced('showgpsinitbox', 'showgpsinit')" value="<?=gettext("Advanced");?>"></input> - <?=gettext("Show GPS Initialization commands");?></a>
 				</div>
 				<div id="showgpsinit" style="display:none">
 					<p>
@@ -499,7 +501,7 @@ U-Blox =	#U-Blox 5, 6 and probably 7
 		<tr>
 			<td width="22%" valign="top">&nbsp;</td>
 			<td width="78%">
-			<input name="Submit" type="submit" class="formbtn" value="<?=gettext("Save");?>" onclick="enable_change(true)">
+			<input name="Submit" type="submit" class="formbtn" value="<?=gettext("Save");?>">
 			</td>
 		</tr>
 	</table>
