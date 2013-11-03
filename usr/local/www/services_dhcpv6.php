@@ -410,40 +410,12 @@ include("head.inc");
 		document.iform.denyunknown.disabled = endis;
 	}
 
-	function show_shownumbervalue() {
-		document.getElementById("shownumbervaluebox").innerHTML='';
-		aodiv = document.getElementById('shownumbervalue');
+	function show_advanced(showboxID, configvalueID) {
+		document.getElementById(showboxID).innerHTML='';
+		aodiv = document.getElementById(configvalueID);
 		aodiv.style.display = "block";
 	}
 
-	function show_ddns_config() {
-		document.getElementById("showddnsbox").innerHTML='';
-		aodiv = document.getElementById('showddns');
-		aodiv.style.display = "block";
-	}
-	function show_ntp_config() {
-		document.getElementById("showntpbox").innerHTML='';
-		aodiv = document.getElementById('showntp');
-		aodiv.style.display = "block";
-	}
-	/*
-	function show_tftp_config() {
-		document.getElementById("showtftpbox").innerHTML='';
-		aodiv = document.getElementById('showtftp');
-		aodiv.style.display = "block";
-	}
-	*/
-	function show_ldap_config() {
-		document.getElementById("showldapbox").innerHTML='';
-		aodiv = document.getElementById('showldap');
-		aodiv.style.display = "block";
-	}
-
-	function show_netboot_config() {
-		document.getElementById("shownetbootbox").innerHTML='';
-		aodiv = document.getElementById('shownetboot');
-		aodiv.style.display = "block";
-	}
 </script>
 
 <body link="#0000CC" vlink="#0000CC" alink="#0000CC">
@@ -683,7 +655,7 @@ display_top_tabs($tab_array);
 			<td width="22%" valign="top" class="vncell"><?=gettext("Dynamic DNS");?></td>
 			<td width="78%" class="vtable">
 				<div id="showddnsbox">
-					<input type="button" onClick="show_ddns_config()" value="<?=gettext("Advanced");?>"></input> - <?=gettext("Show Dynamic DNS");?></a>
+					<input type="button" onClick="show_advanced('showddnsbox', 'showddns')" value="<?=gettext("Advanced");?>"></input> - <?=gettext("Show Dynamic DNS");?></a>
 				</div>
 				<div id="showddns" style="display:none">
 					<input valign="middle" type="checkbox" value="yes" name="ddnsupdate" id="ddnsupdate" <?php if($pconfig['ddnsupdate']) echo " checked"; ?>>&nbsp;
@@ -699,7 +671,7 @@ display_top_tabs($tab_array);
 			<td width="22%" valign="top" class="vncell"><?=gettext("NTP servers");?></td>
 			<td width="78%" class="vtable">
 				<div id="showntpbox">
-					<input type="button" onClick="show_ntp_config()" value="<?=gettext("Advanced");?>"></input> - <?=gettext("Show NTP configuration");?></a>
+					<input type="button" onClick="show_advanced('showntpbox', 'showntp')" value="<?=gettext("Advanced");?>"></input> - <?=gettext("Show NTP configuration");?></a>
 				</div>
 				<div id="showntp" style="display:none">
 					<input name="ntp1" type="text" class="formfld unknown" id="ntp1" size="28" value="<?=htmlspecialchars($pconfig['ntp1']);?>"><br>
@@ -712,7 +684,7 @@ display_top_tabs($tab_array);
 			<td width="22%" valign="top" class="vncell"><?=gettext("TFTP server");?></td>
 			<td width="78%" class="vtable">
 			<div id="showtftpbox">
-				<input type="button" onClick="show_tftp_config()" value="<?=gettext("Advanced");?>"></input> - <?=gettext("Show TFTP configuration");?></a>
+				<input type="button" onClick="show_advanced('showtftpbox', 'showtftp')" value="<?=gettext("Advanced");?>"></input> - <?=gettext("Show TFTP configuration");?></a>
 			</div>
 			<div id="showtftp" style="display:none">
 				<input name="tftp" type="text" class="formfld unknown" id="tftp" size="50" value="<?=htmlspecialchars($pconfig['tftp']);?>"><br>
@@ -725,7 +697,7 @@ display_top_tabs($tab_array);
 			<td width="22%" valign="top" class="vncell"><?=gettext("LDAP URI");?></td>
 			<td width="78%" class="vtable">
 				<div id="showldapbox">
-					<input type="button" onClick="show_ldap_config()" value="<?=gettext("Advanced");?>"></input> - <?=gettext("Show LDAP configuration");?></a>
+					<input type="button" onClick="show_advanced('showldapbox', 'showldap')" value="<?=gettext("Advanced");?>"></input> - <?=gettext("Show LDAP configuration");?></a>
 				</div>
 				<div id="showldap" style="display:none">
 					<input name="ldap" type="text" class="formfld unknown" id="ldap" size="80" value="<?=htmlspecialchars($pconfig['ldap']);?>"><br>
@@ -737,7 +709,7 @@ display_top_tabs($tab_array);
 			<td width="22%" valign="top" class="vncell"><?=gettext("Enable network booting");?></td>
 			<td width="78%" class="vtable">
 				<div id="shownetbootbox">
-					<input type="button" onClick="show_netboot_config()" value="<?=gettext("Advanced");?>"></input> - <?=gettext("Show Network booting");?></a>
+					<input type="button" onClick="show_advanced('shownetbootbox', 'shownetboot')" value="<?=gettext("Advanced");?>"></input> - <?=gettext("Show Network booting");?></a>
 				</div>
 				<div id="shownetboot" style="display:none">
 					<input valign="middle" type="checkbox" value="yes" name="netboot" id="netboot" <?php if($pconfig['netboot']) echo " checked"; ?>>&nbsp;
@@ -759,7 +731,7 @@ display_top_tabs($tab_array);
 			<td width="22%" valign="top" class="vncell"><?=gettext("Additional BOOTP/DHCP Options");?></td>
 			<td width="78%" class="vtable">
 				<div id="shownumbervaluebox">
-					<input type="button" onClick="show_shownumbervalue()" value="<?=gettext("Advanced");?>"></input> - <?=gettext("Show Additional BOOTP/DHCP Options");?></a>
+					<input type="button" onClick="show_advanced('shownumbervaluebox', 'shownumbervalue')" value="<?=gettext("Advanced");?>"></input> - <?=gettext("Show Additional BOOTP/DHCP Options");?></a>
 				</div>
 				<div id="shownumbervalue" style="display:none">
 				<table id="maintable">
