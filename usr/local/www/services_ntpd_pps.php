@@ -38,7 +38,58 @@
 
 require("guiconfig.inc");
 
+if ($_POST) {
 
+	unset($input_errors);
+
+	if (!$input_errors) {
+		if (!empty($_POST['ppsport']) && file_exists('/dev/'.$_POST['ppsport']))
+			$config['ntpd']['pps']['port'] = $_POST['ppsport'];
+		/* if port is not set, remove all the pps config */
+		else unset($config['ntpd']['pps']);
+
+		if (!empty($_POST['ppsfudge1']))
+			$config['ntpd']['pps']['fudge1'] = $_POST['ppsfudge1'];
+		elseif (isset($config['ntpd']['pps']['fudge1']))
+			unset($config['ntpd']['pps']['fudge1']);
+
+		if (!empty($_POST['ppsstratum']) && ($_POST['ppsstratum']) < 17 )
+			$config['ntpd']['pps']['stratum'] = $_POST['ppsstratum'];
+		elseif (isset($config['ntpd']['pps']['stratum']))
+			unset($config['ntpd']['pps']['stratum']);
+
+		if (!empty($_POST['ppsselect']))
+			$config['ntpd']['pps']['noselect'] = $_POST['ppsselect'];
+		elseif (isset($config['ntpd']['pps']['noselect']))
+			unset($config['ntpd']['pps']['noselect']);
+
+		if (!empty($_POST['ppsflag2']))
+			$config['ntpd']['pps']['flag2'] = $_POST['ppsflag2'];
+		elseif (isset($config['ntpd']['pps']['flag2']))
+			unset($config['ntpd']['pps']['flag2']);
+
+		if (!empty($_POST['ppsflag3']))
+			$config['ntpd']['pps']['flag3'] = $_POST['ppsflag3'];
+		elseif (isset($config['ntpd']['pps']['flag3']))
+			unset($config['ntpd']['pps']['flag3']);
+
+		if (!empty($_POST['ppsflag4']))
+			$config['ntpd']['pps']['flag4'] = $_POST['ppsflag4'];
+		elseif (isset($config['ntpd']['pps']['flag4']))
+			unset($config['ntpd']['pps']['flag4']);
+
+		if (!empty($_POST['ppsrefid']))
+			$config['ntpd']['pps']['refid'] = $_POST['ppsrefid'];
+		elseif (isset($config['ntpd']['pps']['refid']))
+			unset($config['ntpd']['pps']['refid']);
+			
+		write_config("Updated NTP PPS Settings");
+
+		$retval = 0;
+		$retval = system_ntp_configure();
+		$savemsg = get_std_save_message($retval);
+	}
+}
 $pconfig = &$config['ntpd']['pps'];
 
 $pgtitle = array(gettext("Services"),gettext("NTP PPS"));
@@ -74,9 +125,11 @@ include("head.inc");
 		<tr>
 			<td width="22%" valign="top" class="vncellreq">
 			</td>
-			<td width="78%" class="vtable">Devices with a PPS output such as radios that listen to WWVB or DCF77 or a GPS via a serial port may be used as a PPS reference for NTP.
+			<td width="78%" class="vtable"><?php echo gettext("Devices with a Pulse Per Second output such as radios that receive a time signal from DCF77 (DE), JJY (JP), MSF (GB) or WWVB (US) may be used as a PPS reference for NTP.");?> 
+			<?php echo gettext("A serial GPS may also be used, but the serial GPS driver would usually be the better option.");?> 
+			<?php echo gettext("A PPS signal only provides a reference to the change of a second, so at least one other source to number the seconds is required.");?>
 			<br/>
-			<br/><?php echo gettext("At least 3 servers need to be configured under"); ?> <a href="system.php"><?php echo gettext("System > General"); ?></a> <?php echo gettext("to provide a time source."); ?>
+			<br/><strong><?php echo gettext("Note");?>:</strong> <?php echo gettext("At least 3 time servers should be configured under"); ?> <a href="system.php"><?php echo gettext("System > General"); ?></a> <?php echo gettext("to provide a time source."); ?>
 			</td>
 		</tr>
 <?php $serialports = glob("/dev/cua?[0-9]{,.[0-9]}", GLOB_BRACE); ?>
@@ -93,29 +146,19 @@ include("head.inc");
 					<?php endforeach; ?>
 				</select>&nbsp;
 				<?php echo gettext("All serial ports are listed, be sure to pick the port with the PPS source attached."); ?>
-				<br/><br/>
-				<select id="ppsspeed" name="ppsspeed" class="formselect">
-					<option value="0"<?php if(!$pconfig['speed']) echo ' selected'; ?>>4800</option>
-					<option value="16"<?php if($pconfig['speed'] === '16') echo ' selected';?>>9600</option>
-					<option value="32"<?php if($pconfig['speed'] === '32') echo ' selected';?>>19200</option>
-					<option value="48"<?php if($pconfig['speed'] === '48') echo ' selected';?>>38400</option>
-					<option value="64"<?php if($pconfig['speed'] === '64') echo ' selected';?>>57600</option>
-					<option value="80"<?php if($pconfig['speed'] === '80') echo ' selected';?>>115200</option>
-				</select>&nbsp;<?php echo gettext("Serial port baud rate (default: 4800)."); ?>
-				<br/>
 			</td>
 		</tr>
 		<tr>
-			<td width="22%" valign="top" class="vncellreq">Fudge time 1</td>
+			<td width="22%" valign="top" class="vncellreq">Fudge time</td>
 			<td width="78%" class="vtable">
 				<input name="ppsfudge1" type="text" class="formfld unknown" id="ppsfudge1" min="-1" max="1" size="20" value="<?=htmlspecialchars($pconfig['fudge1']);?>">(<?php echo gettext("seconds");?>)<br>
-				<?php echo gettext("Fudge time 1 is used to specify the PPS signal offset");?> (<?php echo gettext("default");?>: 0.0).</td>
+				<?php echo gettext("Fudge time is used to specify the PPS signal offset from the actual second such as the transmission delay between the transmitter and the receiver.");?> (<?php echo gettext("default");?>: 0.0).</td>
 		</tr>
 		<tr>
 			<td width="22%" valign="top" class="vncellreq">Stratum</td>
 			<td width="78%" class="vtable">
 				<input name="ppsstratum" type="text" class="formfld unknown" id="ppsstratum" max="16" size="20" value="<?=htmlspecialchars($pconfig['stratum']);?>"><?php echo gettext("(0-16)");?><br>
-				<?php echo gettext("This may be used to change the PPS Clock stratum");?> (<?php echo gettext("default");?>: 0). <?php echo gettext("This may be useful if, for some reason, you want ntpd to prefer a different clock"); ?></td>
+				<?php echo gettext("This may be used to change the PPS Clock stratum");?> (<?php echo gettext("default");?>: 0). <?php echo gettext("This may be useful if, for some reason, you want ntpd to prefer a different clock and just monitor this source."); ?></td>
 		</tr>
 		<tr>
 			<td width="22%" valign="top" class="vncellreq">Flags</td>
@@ -130,14 +173,6 @@ include("head.inc");
 				<table>
 					<tr>
 						<td>
-							<input name="ppsflag1" type="checkbox" class="formcheckbox" id="ppsflag1"<?php if($pconfig['flag1']) echo ' checked'; ?>>
-						</td>
-						<td>
-							<span class="vexpl"><?php echo gettext("Enable PPS signal processing (default: enabled)."); ?></span>
-						</td>
-					</tr>
-					<tr>
-						<td>
 							<input name="ppsflag2" type="checkbox" class="formcheckbox" id="ppsflag2"<?php if($pconfig['flag2']) echo ' checked'; ?>>
 						</td>
 						<td>
@@ -149,7 +184,7 @@ include("head.inc");
 							<input name="ppsflag3" type="checkbox" class="formcheckbox" id="ppsflag3"<?php if($pconfig['flag3']) echo ' checked'; ?>>
 						</td>
 						<td>
-							<span class="vexpl"><?php echo gettext("Enable kernel PPS clock discipline (default: enabled)."); ?></span>
+							<span class="vexpl"><?php echo gettext("Enable kernel PPS clock discipline (default: disabled)."); ?></span>
 						</td>
 					</tr>
 					<tr>
@@ -157,7 +192,7 @@ include("head.inc");
 							<input name="ppsflag4" type="checkbox" class="formcheckbox" id="ppsflag4"<?php if($pconfig['flag4']) echo ' checked'; ?>>
 						</td>
 						<td>
-							<span class="vexpl"><?php echo gettext("Obscure location in timestamp (default: unobscured)."); ?></span>
+							<span class="vexpl"><?php echo gettext("Record a timestamp once for each second, useful for constructing Allan deviation plots (default: disabled)."); ?></span>
 						</td>
 					</tr>
 				</table>
@@ -179,7 +214,7 @@ include("head.inc");
 <!--
 /*
 </br><p> $config</p></br>
-<?php var_dump($config['ntpd']['gps']); ?>
+<?php var_dump($config['ntpd']['pps']); ?>
 </br><p> $_POST</p></br>
 <?php var_dump($_POST); ?>
 </br><p> $pconfig</p></br>
