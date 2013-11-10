@@ -1264,6 +1264,24 @@ function system_ntp_setup_gps($serialport) {
 	return true;
 }
 
+function system_ntp_setup_pps($serialport) {
+	global $config, $g;
+	$pps_device = '/dev/pps0';
+	$serialport = '/dev/'.$serialport;
+
+	if (!file_exists($serialport))
+		return false;
+
+	conf_mount_rw();
+	// Create symlink that ntpd requires
+	unlink_if_exists($pps_device);
+	symlink($serialport, $pps_device);
+
+	conf_mount_ro();
+
+	return true;
+}
+
 function system_ntp_configure($start_ntpd=true) {
 	global $config, $g;
 	$driftfile = "/var/db/ntpd.drift";
@@ -1289,6 +1307,45 @@ function system_ntp_configure($start_ntpd=true) {
 		$ntpcfg .= '12';
 	}
 	$ntpcfg .= "\n";
+
+	/* Add PPS configuration */
+	if (!empty($config['ntpd']['pps'])
+		&& file_exists('/dev/'.$config['ntpd']['pps']['port'])
+		&& system_ntp_setup_pps($config['ntpd']['pps']['port'])) {
+		$ntpcfg .= "\n";
+		$ntpcfg .= "# PPS Setup\n";
+		$ntpcfg .= 'server 127.127.22.0';
+		$ntpcfg .= ' minpoll 4 maxpoll 4';
+		if (empty($config['ntpd']['pps']['prefer'])) { /*note: this one works backwards */
+			$ntpcfg .= ' prefer'; 
+		}
+		if (!empty($config['ntpd']['pps']['noselect'])) {
+			$ntpcfg .= ' noselect ';
+		}
+		$ntpcfg .= "\n";
+		$ntpcfg .= 'fudge 127.127.22.0';
+		if (!empty($config['ntpd']['pps']['fudge1'])) {
+			$ntpcfg .= ' time1 ';
+			$ntpcfg .= $config['ntpd']['pps']['fudge1'];
+		}
+		if (!empty($config['ntpd']['pps']['flag2'])) {
+			$ntpcfg .= ' flag2 1';
+		}
+		if (!empty($config['ntpd']['pps']['flag3'])) {
+			$ntpcfg .= ' flag3 1';
+		}else{
+			$ntpcfg .= ' flag3 0';
+		}
+		if (!empty($config['ntpd']['pps']['flag4'])) {
+			$ntpcfg .= ' flag4 1';
+		}
+		if (!empty($config['ntpd']['pps']['refid'])) {
+			$ntpcfg .= ' refid ';
+			$ntpcfg .= $config['ntpd']['pps']['refid'];
+		}
+		$ntpcfg .= "\n";
+	}
+	/* End PPS configuration */
 
 	/* Add GPS configuration */
 	if (!empty($config['ntpd']['gps'])
@@ -1360,7 +1417,8 @@ function system_ntp_configure($start_ntpd=true) {
 		$ntpcfg .= "server 127.127.1.0\n";
 		$ntpcfg .= "fudge 127.127.1.0 stratum 12\n";
 	}
-
+	/* End GPS configuration */
+	
 	$ntpcfg .= "\n\n# Upstream Servers\n";
 	/* foreach through servers and write out to ntpd.conf */
 	foreach (explode(' ', $config['system']['timeservers']) as $ts)
