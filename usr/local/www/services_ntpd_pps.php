@@ -211,13 +211,3 @@ include("head.inc");
 <?php include("fend.inc"); ?>
 </body>
 </html>
-<!--
-/*
-</br><p> $config</p></br>
-<?php var_dump($config['ntpd']['pps']); ?>
-</br><p> $_POST</p></br>
-<?php var_dump($_POST); ?>
-</br><p> $pconfig</p></br>
-<?php var_dump($pconfig); ?>
-*/
--->

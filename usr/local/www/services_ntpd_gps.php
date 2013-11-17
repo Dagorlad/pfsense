@@ -546,13 +546,3 @@ U-Blox =	#U-Blox 5, 6 and probably 7
 <?php include("fend.inc"); ?>
 </body>
 </html>
-<!--
-/*
-</br><p> $config</p></br>
-<?php var_dump($config['ntpd']['gps']); ?>
-</br><p> $_POST</p></br>
-<?php var_dump($_POST); ?>
-</br><p> $pconfig</p></br>
-<?php var_dump($pconfig); ?>
-*/
--->

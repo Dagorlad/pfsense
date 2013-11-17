@@ -39,6 +39,8 @@
 ##|-PRIV
 
 require("guiconfig.inc");
+require_once('rrd.inc');
+require_once("shaper.inc");
 
 if (empty($config['ntpd']['interface']))
 	if ($config['installedpackages']['openntpd'] && empty($config['installedpackages']['openntpd']['config'][0]['interface'])) {
@@ -65,8 +67,21 @@ if ($_POST) {
 		elseif (isset($config['ntpd']['gpsport']))
 			unset($config['ntpd']['gpsport']);
 
-		if (!empty($_POST['gpsorphan']) && ($_POST['gpsorphan'] < 16) && ($_POST['gpsorphan'] != '12'))
-			$config['ntpd']['orphan'] = $_POST['gpsorphan'];
+		unset($config['ntpd']['prefer']);
+		unset($config['ntpd']['noselect']);
+		$timeservers = '';
+		for ($i = 0; $i < 10; $i++) {
+			$tserver = trim($_POST["server{$i}"]); ;
+			if (!empty($tserver)) {
+				$timeservers .= "{$tserver} ";
+				if (!empty($_POST["servprefer{$i}"])) $config['ntpd']['prefer'] .= "{$tserver} ";
+				if (!empty($_POST["servselect{$i}"])) $config['ntpd']['noselect'].= "{$tserver} ";
+			}
+		}
+		$config['system']['timeservers'] = trim($timeservers);
+
+		if (!empty($_POST['ntporphan']) && ($_POST['ntporphan'] < 17) && ($_POST['ntporphan'] != '12'))
+			$config['ntpd']['orphan'] = $_POST['ntporphan'];
 		elseif (isset($config['ntpd']['orphan']))
 			unset($config['ntpd']['orphan']);
 
@@ -125,6 +140,8 @@ if ($_POST) {
 		elseif (isset($config['ntpd']['notrap']))
 			unset($config['ntpd']['notrap']);
 
+		if ((empty($_POST['statsgraph'])) != (isset($config['ntpd']['statsgraph'])));
+			enable_rrd_graphing();
 		if (!empty($_POST['statsgraph']))
 			$config['ntpd']['statsgraph'] = $_POST['statsgraph'];
 		elseif (isset($config['ntpd']['statsgraph']))
@@ -153,12 +170,44 @@ $shortcut_section = "ntp";
 include("head.inc");
 
 ?>
+
 <script type="text/javascript">
+
+	//Generic show an advanced option function
 	function show_advanced(showboxID, configvalueID) {
 		document.getElementById(showboxID).innerHTML='';
 		aodiv = document.getElementById(configvalueID);
 		aodiv.style.display = "block";
 	}
+
+	//Insure only one of two mutually exclusive options are checked
+	function CheckOffOther(clicked, checkOff) {
+		if (document.getElementById(clicked).checked) {
+			document.getElementById(checkOff).checked=false;
+		}
+	}
+
+	//Show another time server line, limited to 10 servers
+	function NewTimeServer(add) {
+		//If the last line has a value
+		var CheckServer = 'server' + (add - 1);
+		var LastId = document.getElementById(CheckServer);
+		if (document.getElementById(CheckServer).value != '') {
+			if (add < 10) {
+				var TimeServerID = 'timeserver' + add;
+				document.getElementById(TimeServerID).style.display = 'block';
+				//then revise the add another server line
+				if (add < 9) {
+					var next = add + 1;
+					var newdiv = '<img src="/themes/<?= $g['theme']; ?>/images/icons/icon_plus.gif" width="17" height="17" border="0" title="<?php echo gettext("Add another Time server");?>" OnClick="NewTimeServer(' + next + ')">\n';
+					document.getElementById('addserver').innerHTML=newdiv;
+				}else{
+					document.getElementById('addserver').style.display = 'none';
+				}
+			}
+		}
+	}
+	
 </script>
 
 
@@ -218,33 +267,44 @@ include("head.inc");
 					<br/><?php echo gettext("Selecting all interfaces will explicitly listen on only the interfaces/IPs specified."); ?>
 				</td>
 			</tr>
-<?php /* Probing would be nice, but much more complex. Would need to listen to each port for 1s+ and watch for strings. */ ?>
-<?php $serialports = glob("/dev/cua?[0-9]{,.[0-9]}", GLOB_BRACE); ?>
-<?php if (!empty($serialports)): ?>
 			<tr>
-				<td width="22%" valign="top" class="vncellreq">Serial GPS</td>
+				<td width="22%" valign="top" class="vncellreq">Time servers</td>
 				<td width="78%" class="vtable">
-					<select name="gpsport">
-						<option value="">none</option>
-			<?php foreach ($serialports as $port):
-				$shortport = substr($port,5);
-				$selected = ($shortport == $config['ntpd']['gpsport']) ? " selected" : "";?>
-						<option value="<?php echo $shortport;?>"<?php echo $selected;?>><?php echo $shortport;?></option>
-			<?php endforeach; ?>
-					</select>
+					<?php
+					$timeservers = explode( ' ', $config['system']['timeservers']);
+					for ($i = $j = 0; $i < 10; $i++){
+						echo "<div id=\"timeserver{$i}\"";
+						if (isset($timeservers[$i])) {
+							$j++;
+						}else{
+							echo " style=\"display:none\"";
+						}
+						echo ">\n";
+						
+						echo "<input name=\"server{$i}\" class=\"formfld unknown\" id=\"server{$i}\" size=\"30\" value=\"{$timeservers[$i]}\" type=\"text\">&emsp;";
+						echo "\n<input name=\"servprefer{$i}\" class=\"formcheckbox\" id=\"servprefer{$i}\" OnClick=\"CheckOffOther('servprefer{$i}', 'servselect{$i}')\" type=\"checkbox\"";
+						if (substr_count($config['ntpd']['prefer'], $timeservers[$i])) echo ' checked';
+						echo '>&nbsp;prefer&emsp;';
+						echo "\n<input name=\"servselect{$i}\" class=\"formcheckbox\" id=\"servselect{$i}\" OnClick=\"CheckOffOther('servselect{$i}', 'servprefer{$i}')\" type=\"checkbox\"";
+						if (substr_count($config['ntpd']['noselect'], $timeservers[$i])) echo ' checked';
+						echo ">&nbsp;noselect\n<br/>\n</div>\n";
+					}
+					?>
+					<div id="addserver">
+					<img src="/themes/<?= $g['theme']; ?>/images/icons/icon_plus.gif" width="17" height="17" border="0" title="<?php echo gettext("Add another Time server");?>" OnClick="NewTimeServer(<?php echo $j;?>)">
+					</div>
 					<br/>
-					<br/><?php echo gettext("The GPS must provide NMEA format output!"); ?>
+					<?php echo gettext('Ideally three to five servers should be configured here.'); ?>
 					<br/>
-					<br/><?php echo gettext("All serial ports are listed, be sure to pick only the port with the GPS attached."); ?>
+					<?php echo gettext('The <i>prefer</i> option indicates that NTP should favor the use of this server more than all others.'); ?>
 					<br/>
-					<br/><?php echo gettext("It is best to configure at least 2 servers under"); ?> <a href="system.php"><?php echo gettext("System > General"); ?></a> <?php echo gettext("to avoid loss of sync if the GPS data is not valid over time. Otherwise ntpd may only use values from the unsynchronized local clock when providing time to clients."); ?>
+					<?php echo gettext('The <i>noselect</i> option indicates that NTP should not use this server for time, but stats for this server will be collected and displayed.'); ?>
 				</td>
 			</tr>
-<?php endif; ?>
 			<tr>
 				<td width="22%" valign="top" class="vncellreq">Orphan mode</td>
 				<td width="78%" class="vtable">
-					<input name="gpsorphan" type="text" class="formfld unknown" id="gpsorphan" min="1" max="16" size="20" value="<?=htmlspecialchars($pconfig['orphan']);?>"><?php echo gettext("(0-15)");?><br>
+					<input name="ntporphan" type="text" class="formfld unknown" id="ntporphan" min="1" max="16" size="20" value="<?=htmlspecialchars($pconfig['orphan']);?>"><?php echo gettext("(0-15)");?><br>
 					<?php echo gettext("Orphan mode allows the system clock to be used when no other clocks are available. The number here specifies the stratum reported during orphan mode and should normally be set to a number high enough to insure that any other servers available to clients are preferred over this server. (default: 12)."); ?>
 				</td>
 			</tr>
@@ -345,3 +405,4 @@ include("head.inc");
 <?php include("fend.inc"); ?>
 </body>
 </html>
+

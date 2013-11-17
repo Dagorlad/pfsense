@@ -1420,9 +1420,14 @@ function system_ntp_configure($start_ntpd=true) {
 	/* End GPS configuration */
 	
 	$ntpcfg .= "\n\n# Upstream Servers\n";
-	/* foreach through servers and write out to ntpd.conf */
-	foreach (explode(' ', $config['system']['timeservers']) as $ts)
-		$ntpcfg .= "server {$ts} iburst maxpoll 9\n";
+	/* foreach through ntp servers and write out to ntpd.conf */
+	foreach (explode(' ', $config['system']['timeservers']) as $ts) {
+		$ntpcfg .= "server {$ts} iburst maxpoll 9";
+		if (substr_count($config['ntpd']['prefer'], $ts)) $ntpcfg .= ' prefer';
+		if (substr_count($config['ntpd']['noselect'], $ts)) $ntpcfg .= ' noselect';
+		$ntpcfg .= "\n";
+	}
+	unset($ts);
 
 	$ntpcfg .= "\n\n";
 	$ntpcfg .= "enable monitor\n";
