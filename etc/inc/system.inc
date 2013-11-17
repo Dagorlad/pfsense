@@ -1411,7 +1411,7 @@ function system_ntp_configure($start_ntpd=true) {
 		&& system_ntp_setup_gps($config['ntpd']['gpsport'])) {
 		/* This handles a 2.1 and earlier config */
 		$ntpcfg .= "# GPS Setup\n";
-		$ntpcfg .= "server 127.127.20.0 mode 2 minpoll 4 maxpoll 4 prefer\n";
+		$ntpcfg .= "server 127.127.20.0 mode 0 minpoll 4 maxpoll 4 prefer\n";
 		$ntpcfg .= "fudge 127.127.20.0 time1 0.155 time2 0.000 flag1 1 flag2 0 flag3 1\n";
 		// Fall back to local clock if GPS is out of sync?
 		$ntpcfg .= "server 127.127.1.0\n";
