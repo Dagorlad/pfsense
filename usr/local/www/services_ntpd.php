@@ -255,8 +255,8 @@ include("head.inc");
 		if (!is_ipaddr(get_interface_ip($iface)) && !is_ipaddr($iface))
 			continue;
 		echo "<option value='{$iface}'";
-		if (in_array($iface, $pconfig['interface']))
-			echo "selected";
+		if (is_array($pconfig['interface']))
+			if (in_array($iface, $pconfig['interface'])) echo "selected";
 		echo ">{$ifacename}</option>\n";
 	} ?>
 					</select>
