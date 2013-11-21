@@ -274,7 +274,7 @@ include("head.inc");
 					$timeservers = explode( ' ', $config['system']['timeservers']);
 					for ($i = $j = 0; $i < 10; $i++){
 						echo "<div id=\"timeserver{$i}\"";
-						if (isset($timeservers[$i])) {
+						if ((isset($timeservers[$i])) || ($i < 3)) {
 							$j++;
 						}else{
 							echo " style=\"display:none\"";
@@ -294,7 +294,7 @@ include("head.inc");
 					<img src="/themes/<?= $g['theme']; ?>/images/icons/icon_plus.gif" width="17" height="17" border="0" title="<?php echo gettext("Add another Time server");?>" OnClick="NewTimeServer(<?php echo $j;?>)">
 					</div>
 					<br/>
-					<?php echo gettext('Ideally three to five servers should be configured here.'); ?>
+					<?php echo gettext('For best results three to five servers should be configured here.'); ?>
 					<br/>
 					<?php echo gettext('The <i>prefer</i> option indicates that NTP should favor the use of this server more than all others.'); ?>
 					<br/>

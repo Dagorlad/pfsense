@@ -129,7 +129,7 @@ include("head.inc");
 			<?php echo gettext("A serial GPS may also be used, but the serial GPS driver would usually be the better option.");?> 
 			<?php echo gettext("A PPS signal only provides a reference to the change of a second, so at least one other source to number the seconds is required.");?>
 			<br/>
-			<br/><strong><?php echo gettext("Note");?>:</strong> <?php echo gettext("At least 3 time servers should be configured under"); ?> <a href="system.php"><?php echo gettext("System > General"); ?></a> <?php echo gettext("to provide a time source."); ?>
+			<br/><strong><?php echo gettext("Note");?>:</strong> <?php echo gettext("At least 3 additional time sources should be configured under"); ?> <a href="services_ntpd.php"><?php echo gettext("Services > NTP"); ?></a> <?php echo gettext("to reliably supply the time of each PPS pulse."); ?>
 			</td>
 		</tr>
 <?php $serialports = glob("/dev/cua?[0-9]{,.[0-9]}", GLOB_BRACE); ?>
