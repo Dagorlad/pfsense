@@ -326,7 +326,6 @@ function timeDiff($time, $opt = array()) {
     return $str;
 }
 
-log_error('$curdatabase:', $curdatabase);
 if((strstr($curdatabase, "-traffic.rrd")) && (file_exists("$rrddbpath$curdatabase"))) {
 	/* define graphcmd for traffic stats */
 	$graphcmd = "$rrdtool graph $rrdtmppath$curdatabase-$curgraph.png ";
@@ -1197,7 +1196,7 @@ elseif((strstr($curdatabase, "ntpd.rrd")) && (file_exists("$rrddbpath$curdatabas
 	$graphcmd .= "LINE2:\"cjit#{$colorntpd[2]}:cjit\" ";
 	$graphcmd .= "LINE2:\"wander#{$colorntpd[3]}:wander\" ";
 	$graphcmd .= "COMMENT:\"\\n\" ";
-	$graphcmd .= "COMMENT:\"\t\t      minimum        average        maximum        current\\n\" ";
+	$graphcmd .= "COMMENT:\"\t\t        minimum        average        maximum        current\\n\" ";
 	$graphcmd .= "COMMENT:\"Offset         \" ";
 	$graphcmd .= "GPRINT:\"offset:MIN:%7.2lf %s    \" ";
 	$graphcmd .= "GPRINT:\"offset:AVERAGE:%7.2lf %s    \" ";
